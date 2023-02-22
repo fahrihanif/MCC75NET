@@ -46,13 +46,23 @@ public class AccountController : Controller
     {
         if (ModelState.IsValid)
         {
-            // Bikin kondisi untuk mengecek apakah data university sudah ada
             University university = new University
             {
                 Name = registerVM.UniversityName
             };
-            context.Universities.Add(university);
-            context.SaveChanges();
+
+            // Bikin kondisi untuk mengecek apakah data university sudah ada
+            if (context.Universities.Any(u => u.Name == university.Name))
+            {
+                university.Id = context.Universities
+                    .FirstOrDefault(u => u.Name == university.Name)
+                    .Id;
+            }
+            else
+            {
+                context.Universities.Add(university);
+                context.SaveChanges();
+            }
 
             Education education = new Education
             {
@@ -109,8 +119,33 @@ public class AccountController : Controller
     }
 
     // GET : Account/Login
+    public IActionResult Login()
+    {
+        return View();
+    }
 
     // POST : Account/Login
     // Parameter LoginVM {Email, Password}
     // Validasi Email exist?, Password equal?
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public IActionResult Login(LoginVM loginVM)
+    {
+        var getAccounts = context.Employees.Join(
+            context.Accounts,
+            e => e.NIK,
+            a => a.EmployeeNIK,
+            (e, a) => new LoginVM
+            {
+                Email = e.Email,
+                Password = a.Password
+            });
+
+        if (getAccounts.Any(e => e.Email == loginVM.Email && e.Password == loginVM.Password))
+        {
+            return RedirectToAction("Index", "Home");
+        }
+        ModelState.AddModelError(string.Empty, "Account or Password Not Found!");
+        return View();
+    }
 }

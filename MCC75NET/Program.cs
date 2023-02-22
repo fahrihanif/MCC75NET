@@ -1,4 +1,5 @@
 using MCC75NET.Contexts;
+using MCC75NET.Repositories;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -9,6 +10,9 @@ builder.Services.AddControllersWithViews();
 // Configure DbContext to Sql Server Database
 var connectionString = builder.Configuration.GetConnectionString("Connection");
 builder.Services.AddDbContext<MyContext>(options => options.UseSqlServer(connectionString));
+
+// Dependency Injection
+builder.Services.AddScoped<UniversityRepository>();
 
 var app = builder.Build();
 
