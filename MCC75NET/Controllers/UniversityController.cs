@@ -68,11 +68,7 @@ public class UniversityController : Controller
     public IActionResult Remove(int id)
     {
         var result = repository.Delete(id);
-        if (result == 0)
-        {
-            // Data Tidak Ditemukan
-        }
-        else
+        if (result > 0)
         {
             return RedirectToAction(nameof(Index));
         }
