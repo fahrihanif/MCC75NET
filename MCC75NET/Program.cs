@@ -11,12 +11,20 @@ builder.Services.AddControllersWithViews();
 var connectionString = builder.Configuration.GetConnectionString("Connection");
 builder.Services.AddDbContext<MyContext>(options => options.UseSqlServer(connectionString));
 
+// Configure Session
+builder.Services.AddSession(options =>
+{
+    options.IdleTimeout = TimeSpan.FromSeconds(10);
+});
+
 // Dependency Injection
 builder.Services.AddScoped<UniversityRepository>();
 builder.Services.AddScoped<EducationRepository>();
 builder.Services.AddScoped<AccountRepository>();
 builder.Services.AddScoped<EmployeeRepository>();
 builder.Services.AddScoped<RoleRepository>();
+
+builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 
 var app = builder.Build();
 
@@ -34,6 +42,8 @@ app.UseStaticFiles();
 app.UseRouting();
 
 app.UseAuthorization();
+
+app.UseSession();
 
 app.MapControllerRoute(
     name: "default",
