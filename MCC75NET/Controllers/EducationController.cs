@@ -1,49 +1,32 @@
 ﻿using MCC75NET.Contexts;
 using MCC75NET.Models;
+using MCC75NET.Repositories;
 using MCC75NET.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
 
 namespace MCC75NET.Controllers;
 public class EducationController : Controller
 {
     private readonly MyContext context;
+    private readonly EducationRepository repository;
 
-    public EducationController(MyContext context)
+    public EducationController(MyContext context, EducationRepository repository)
     {
         this.context = context;
+        this.repository = repository;
     }
 
     public IActionResult Index()
     {
-        var results = context.Educations.Join(
-            context.Universities,
-            e => e.UniversityId,
-            u => u.Id,
-            (e, u) => new EducationVM
-            {
-                Id = e.Id,
-                Degree = e.Degree,
-                GPA = e.GPA,
-                Major = e.Major,
-                UniversityName = u.Name
-            });
-
+        var results = repository.GetAllEducationUniversities();
         return View(results);
     }
 
     public IActionResult Details(int id)
     {
-        var education = context.Educations.Find(id);
-        return View(new EducationVM
-        {
-            Id = education.Id,
-            Degree = education.Degree,
-            GPA = education.GPA,
-            Major = education.Major,
-            UniversityName = context.Universities.Find(education.UniversityId).Name
-        });
+        var education = repository.GetByIdEducationUniversities(id);
+        return View(education);
     }
 
     public IActionResult Create()
@@ -62,13 +45,13 @@ public class EducationController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public IActionResult Create(EducationVM education)
+    public IActionResult Create(EducationUniversityVM education)
     {
         string addComma = education.GPA.ToString().Insert(1, ",");
         double changeToDouble = Convert.ToDouble(addComma);
         education.GPA = changeToDouble;
 
-        context.Add(new Education
+        var result = repository.Insert(new Education
         {
             Id = education.Id,
             Degree = education.Degree,
@@ -76,7 +59,6 @@ public class EducationController : Controller
             Major = education.Major,
             UniversityId = Convert.ToInt16(education.UniversityName)
         });
-        var result = context.SaveChanges();
         if (result > 0)
             return RedirectToAction(nameof(Index));
         return View();
@@ -84,7 +66,7 @@ public class EducationController : Controller
 
     public IActionResult Edit(int id)
     {
-        var education = context.Educations.Find(id);
+        var education = repository.GetByIdEducationUniversities(id);
         var universites = context.Universities.ToList()
             .Select(u => new SelectListItem
             {
@@ -93,30 +75,21 @@ public class EducationController : Controller
             });
 
         ViewBag.University = universites;
-        return View(new EducationVM
-        {
-            Id = education.Id,
-            Degree = education.Degree,
-            GPA = education.GPA,
-            Major = education.Major,
-            UniversityName = context.Universities.Find(education.UniversityId).Name
-        });
+        return View(education);
     }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public IActionResult Edit(EducationVM education)
+    public IActionResult Edit(EducationUniversityVM education)
     {
-        context.Entry(new Education
+        var result = repository.Update(new Education
         {
             Id = education.Id,
             Degree = education.Degree,
             GPA = education.GPA,
             Major = education.Major,
             UniversityId = Convert.ToInt16(education.UniversityName)
-        }).State = EntityState.Modified;
-
-        var result = context.SaveChanges();
+        });
         if (result > 0)
             return RedirectToAction(nameof(Index));
 
@@ -125,24 +98,15 @@ public class EducationController : Controller
 
     public IActionResult Delete(int id)
     {
-        var education = context.Educations.Find(id);
-        return View(new EducationVM
-        {
-            Id = education.Id,
-            Degree = education.Degree,
-            GPA = education.GPA,
-            Major = education.Major,
-            UniversityName = context.Universities.Find(education.UniversityId).Name
-        });
+        var education = repository.GetByIdEducationUniversities(id);
+        return View(education);
     }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
     public IActionResult Remove(int id)
     {
-        var education = context.Educations.Find(id);
-        context.Remove(education);
-        var result = context.SaveChanges();
+        var result = repository.Delete(id);
         if (result > 0)
             return RedirectToAction(nameof(Index));
 

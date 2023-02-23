@@ -17,13 +17,13 @@ public class UniversityRepository : IRepository<int, University>
     public int Delete(int key)
     {
         int result = 0;
-        var university = GetById(key);
-        if (university == null)
+        var entity = GetById(key);
+        if (entity == null)
         {
             return result;
         }
 
-        context.Remove(university);
+        context.Remove(entity);
         result = context.SaveChanges();
 
         return result;
@@ -31,12 +31,12 @@ public class UniversityRepository : IRepository<int, University>
 
     public List<University> GetAll()
     {
-        return context.Universities.ToList() ?? null;
+        return context.Universities.ToList();
     }
 
     public University GetById(int key)
     {
-        return context.Universities.Find(key) ?? null;
+        return context.Universities.Find(key);
     }
 
     public int Insert(University entity)
