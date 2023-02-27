@@ -2,15 +2,21 @@
 using MCC75NET.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 
 namespace MCC75NET.Controllers;
 public class AccountController : Controller
 {
     private readonly AccountRepository repository;
+    private readonly IConfiguration configuration;
 
-    public AccountController(AccountRepository repository)
+    public AccountController(AccountRepository repository, IConfiguration configuration)
     {
         this.repository = repository;
+        this.configuration = configuration;
     }
 
     public IActionResult Index()
@@ -70,15 +76,34 @@ public class AccountController : Controller
         if (repository.Login(loginVM))
         {
             var userdata = repository.GetUserdata(loginVM.Email);
-            const string email = "email";
-            const string fullname = "fullname";
-            const string role = "role";
+            var roles = repository.GetRolesByNIK(loginVM.Email);
 
-            HttpContext.Session.SetString(email, userdata.Email);
-            HttpContext.Session.SetString(fullname, userdata.FullName);
-            HttpContext.Session.SetString(role, userdata.Role);
+            var claims = new List<Claim>()
+            {
+                new Claim(ClaimTypes.Email, userdata.Email),
+                new Claim(ClaimTypes.Name, userdata.FullName)
+            };
 
-            return RedirectToAction("Index", "Home");
+            foreach (var item in roles)
+            {
+                claims.Add(new Claim(ClaimTypes.Role, item));
+            }
+
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["JWT:Key"]));
+            var signIn = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+            var token = new JwtSecurityToken(
+                issuer: configuration["JWT:Issuer"],
+                audience: configuration["JWT:Audience"],
+                claims: claims,
+                expires: DateTime.Now.AddMinutes(10),
+                signingCredentials: signIn
+                );
+
+            var generateToken = new JwtSecurityTokenHandler().WriteToken(token);
+
+            HttpContext.Session.SetString("jwtoken", generateToken);
+
+            return RedirectToAction(nameof(Index), "Home");
         }
         ModelState.AddModelError(string.Empty, "Account or Password Not Found!");
         return View();

@@ -1,10 +1,13 @@
 ﻿using MCC75NET.Models;
 using MCC75NET.Repositories;
 using MCC75NET.ViewModels;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace MCC75NET.Controllers;
+
+[Authorize]
 public class EmployeeController : Controller
 {
     private readonly EmployeeRepository repository;
@@ -46,6 +49,7 @@ public class EmployeeController : Controller
         });
     }
 
+    [Authorize(Roles = "Admin")]
     public IActionResult Create()
     {
         var gender = new List<SelectListItem>
