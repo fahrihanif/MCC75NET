@@ -1,4 +1,5 @@
 ﻿using MCC75NET.Contexts;
+using MCC75NET.Handlers;
 using MCC75NET.Models;
 using MCC75NET.ViewModels;
 
@@ -23,9 +24,14 @@ public class AccountRepository
             {
                 Email = e.Email,
                 Password = a.Password
-            });
+            }).FirstOrDefault(a => a.Email == loginVM.Email);
 
-        return getAccounts.Any(e => e.Email == loginVM.Email && e.Password == loginVM.Password);
+        if (getAccounts is null)
+        {
+            return false;
+        }
+
+        return Hashing.ValidatePassword(loginVM.Password, getAccounts.Password);
     }
 
     public int Register(RegisterVM registerVM)
@@ -76,7 +82,7 @@ public class AccountRepository
         Account account = new Account
         {
             EmployeeNIK = registerVM.NIK,
-            Password = registerVM.Password
+            Password = Hashing.HashPassword(registerVM.Password),
         };
         context.Accounts.Add(account);
         result = context.SaveChanges();
